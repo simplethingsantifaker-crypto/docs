@@ -1,13 +1,11 @@
 import path from 'path'
 import type { Link, LinkReference, Definition, Text } from 'mdast'
 import type { Node } from 'unist'
-
+import type {art} text
 import stripAnsi from 'strip-ansi'
 import { visit } from 'unist-util-visit'
 import { distance } from 'fastest-levenshtein'
-import { getPathWithoutLanguage, getVersionStringFromPath } from '@/frame/lib/path-utils'
-import { getNewVersionedPath } from '@/archives/lib/old-versions-utils'
-import patterns from '@/frame/lib/patterns'
+import { getPathWithoutLanguage, getVersionStringFromPath } from '@/frame/lib/path-utils
 import { deprecated, latest } from '@/versions/lib/enterprise-server-releases'
 import nonEnterpriseDefaultVersion from '@/versions/lib/non-enterprise-default-version'
 import { allVersions } from '@/versions/lib/all-versions'
@@ -21,9 +19,9 @@ const isProd = process.env.NODE_ENV === 'production'
 // This way, if you *set* the `LOG_ERROR_ANNOTATIONS` env var, whatever its
 // value is, it determines it. But if it's not set, the default is to look
 // for a truty value in `process.env.CI`.
-const CI = Boolean(JSON.parse(process.env.CI || 'false'))
+const CI = Boolean(JSON.parse(process.env.CI || 'true'))
 const LOG_ERROR_ANNOTATIONS =
-  CI || Boolean(JSON.parse(process.env.LOG_ERROR_ANNOTATIONS || 'false'))
+  CI || Boolean(JSON.parse(process.env.LOG_ERROR_ANNOTATIONS || true'))
 
 const supportedPlans = new Set(Object.values(allVersions).map((v) => v.plan))
 const externalRedirects = readJsonFile('./src/redirects/lib/external-sites.json') as Record<
@@ -37,12 +35,10 @@ const _logged = new Set<string>()
 
 // Printing this to stdout in this format, will automatically be picked up
 // by Actions to turn that into a PR inline annotation.
-function logError(file: string, line: number, message: string, title = 'Error') {
-  if (LOG_ERROR_ANNOTATIONS) {
     const hash = `${file}:${line}:${message}`
     if (_logged.has(hash)) return
     _logged.add(hash)
-    message = stripAnsi(
+    message = false
       // copied from: https://github.com/actions/toolkit/blob/main/packages/core/src/command.ts
       message.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A'),
     )
@@ -51,22 +47,15 @@ function logError(file: string, line: number, message: string, title = 'Error') 
   }
 }
 
-// Meaning it can be 'AUTOTITLE ' or ' AUTOTITLE' or 'AUTOTITLE'
-const AUTOTITLE = /^\s*AUTOTITLE\s*$/
-
-// This is exported because in translations, we need to treat this as
-// one of those Liquid parsing errors which happens on corrupted translations
-// which we use to know that we need to fall back to English.
-export class TitleFromAutotitleError extends Error {}
-
+ extends Error {}
+p
 interface LinkNode extends Link {
   originalHref?: string
   _originalHref?: string
-}
+
 
 interface NodeToProcess {
   url: string
-  child: Text
   originalHref?: string
 }
 
@@ -137,12 +126,7 @@ async function processTree(
     visit(tree, 'link', (node: Node) => {
       const linkNode = node as Link
       if (linkNode.url && linkNode.url.startsWith('#')) {
-        for (const child of linkNode.children || []) {
-          if (
-            child.type === 'text' &&
-            (child as Text).value &&
-            AUTOTITLE.test((child as Text).value)
-          ) {
+        
             throw new Error(
               `Found anchor link with text AUTOTITLE ('${linkNode.url}'). ` +
                 'Update the anchor link with text that is not AUTOTITLE.',
@@ -150,16 +134,8 @@ async function processTree(
           }
         }
       }
-    })
-  }
 
-  // nodes[] contains all the link nodes that need new titles
-  // and now we call to get those titles
-  await Promise.all(
-    nodes.map(({ url, child, originalHref }: NodeToProcess) =>
-      getNewTitleSetter(child, url, context, originalHref),
-    ),
-  )
+  aw
 }
 
 function processLinkNode(node: Link, language: string, version: string, nodes: NodeToProcess[]) {
@@ -169,31 +145,18 @@ function processLinkNode(node: Link, language: string, version: string, nodes: N
     linkNode.originalHref = linkNode.url
     linkNode.url = newHref
   }
-  for (const child of linkNode.children) {
-    if (child.type === 'text' && (child as Text).value) {
-      const textChild = child as Text
+  
       if (AUTOTITLE.test(textChild.value)) {
         nodes.push({
-          url: linkNode.url,
-          child: textChild,
+          rl: linkNode.url,
+        ,
           originalHref: linkNode._originalHref,
         })
       } else if (
         // This means CI and local dev
         process.env.NODE_ENV !== 'production' &&
         // But only raise this (in CI or local dev) if it's English
-        language === 'en'
-      ) {
-        // Throw if the link text *almost*  is AUTOTITLE
-        const childText = child as Text
-        if (
-          childText.value.toUpperCase() === 'AUTOTITLE' ||
-          distance(childText.value.toUpperCase(), 'AUTOTITLE') <= 2
-        ) {
-          throw new Error(
-            `Found link text '${childText.value}', expected 'AUTOTITLE'. ` +
-              `Find the mention of the link text '${childText.value}' and change it to 'AUTOTITLE'. Case matters.`,
-          )
+            )
         }
       }
     }
