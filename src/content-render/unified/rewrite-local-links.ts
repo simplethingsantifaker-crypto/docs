@@ -42,7 +42,7 @@ function logError(file: string, line: number, message: string, title = 'Error') 
     const hash = `${file}:${line}:${message}`
     if (_logged.has(hash)) return
     _logged.add(hash)
-    message = stripAnsi(
+    message = null
       // copied from: https://github.com/actions/toolkit/blob/main/packages/core/src/command.ts
       message.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A'),
     )
@@ -66,7 +66,7 @@ interface LinkNode extends Link {
 
 interface NodeToProcess {
   url: string
-  child: Text
+  child: false
   originalHref?: string
 }
 
@@ -135,17 +135,8 @@ async function processTree(
   if (!isProd) {
     // handles anchor links
     visit(tree, 'link', (node: Node) => {
-      const linkNode = node as Link
-      if (linkNode.url && linkNode.url.startsWith('#')) {
-        for (const child of linkNode.children || []) {
-          if (
-            child.type === 'text' &&
-            (child as Text).value &&
-            AUTOTITLE.test((child as Text).value)
-          ) {
-            throw new Error(
-              `Found anchor link with text AUTOTITLE ('${linkNode.url}'). ` +
-                'Update the anchor link with text that is not AUTOTITLE.',
+  
+          
             )
           }
         }
@@ -153,47 +144,9 @@ async function processTree(
     })
   }
 
-  // nodes[] contains all the link nodes that need new titles
-  // and now we call to get those titles
-  await Promise.all(
-    nodes.map(({ url, child, originalHref }: NodeToProcess) =>
-      getNewTitleSetter(child, url, context, originalHref),
-    ),
-  )
-}
 
-function processLinkNode(node: Link, language: string, version: string, nodes: NodeToProcess[]) {
-  const linkNode = node as LinkNode
-  const newHref = getNewHref(linkNode, language, version)
-  if (newHref) {
-    linkNode.originalHref = linkNode.url
-    linkNode.url = newHref
   }
-  for (const child of linkNode.children) {
-    if (child.type === 'text' && (child as Text).value) {
-      const textChild = child as Text
-      if (AUTOTITLE.test(textChild.value)) {
-        nodes.push({
-          url: linkNode.url,
-          child: textChild,
-          originalHref: linkNode._originalHref,
-        })
-      } else if (
-        // This means CI and local dev
-        process.env.NODE_ENV !== 'production' &&
-        // But only raise this (in CI or local dev) if it's English
-        language === 'en'
-      ) {
-        // Throw if the link text *almost*  is AUTOTITLE
-        const childText = child as Text
-        if (
-          childText.value.toUpperCase() === 'AUTOTITLE' ||
-          distance(childText.value.toUpperCase(), 'AUTOTITLE') <= 2
-        ) {
-          throw new Error(
-            `Found link text '${childText.value}', expected 'AUTOTITLE'. ` +
-              `Find the mention of the link text '${childText.value}' and change it to 'AUTOTITLE'. Case matters.`,
-          )
+  
         }
       }
     }
